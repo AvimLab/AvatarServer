@@ -1,5 +1,5 @@
 //=============================================================================
-// Copyright © 2001-2006 Point Grey Research, Inc. All Rights Reserved.
+// Copyright ?2001-2006 Point Grey Research, Inc. All Rights Reserved.
 //
 // This software is the confidential and proprietary information of Point
 // Grey Research, Inc. ("Confidential Information").  You shall not
@@ -27,7 +27,7 @@
 //=============================================================================
 
 //=============================================================================
-// $Id: PGRFlyCapture.h,v 1.272 2011/01/25 15:36:39 release Exp $
+// $Id: PGRFlyCapture.h,v 1.237 2008/06/06 23:34:47 release Exp $
 //=============================================================================
 #ifndef __PGRFLYCAPTURE_H__
 #define __PGRFLYCAPTURE_H__
@@ -51,7 +51,7 @@ extern "C"
 // Description:
 //  The version of the library.
 //
-#define PGRFLYCAPTURE_VERSION 108326
+#define PGRFLYCAPTURE_VERSION 108001
 
 
 //
@@ -350,7 +350,6 @@ typedef enum FlyCaptureCameraModel
    FLYCAPTURE_BUMBLEBEE2,
    FLYCAPTURE_BUMBLEBEEXB3,
    FLYCAPTURE_GRASSHOPPER,
-   FLYCAPTURE_CHAMELEON,
    FLYCAPTURE_UNKNOWN = -1,
 
    // Unused member to force this enum to compile to 32 bits.
@@ -438,18 +437,6 @@ typedef struct FlyCaptureInfoEx
 
 } FlyCaptureInfoEx;
 
-//
-// Description:
-//  This structure stores some extra driver info not stored on FlyCaptureInfoEx
-//
-typedef struct FlyCaptureDriverInfo
-{
-   // Null-terminated driver name for attached camera.
-   char pszDriverName[ 512 ];
-   //  Null-terminated driver Driver version
-   char pszVersion [ 512 ];
-
-} FlyCaptureDriverInfo;
 
 //
 // Description:
@@ -470,8 +457,6 @@ typedef enum FlyCaptureColorMethod
    FLYCAPTURE_EDGE_SENSING,
    // Nearest neighbor de-mosaicing.  This algorithm is significantly
    // faster than edge sensing, at the cost of accuracy.
-   // Please note The Nearest Neighbor method has been remapped internally to 
-   // Nearest Neighbor Fast due to observed artifacts with the original method.
    FLYCAPTURE_NEAREST_NEIGHBOR,
    // Faster, less accurate nearest neighbor de-mosaicing.
    FLYCAPTURE_NEAREST_NEIGHBOR_FAST,
@@ -479,7 +464,7 @@ typedef enum FlyCaptureColorMethod
    // reproduction.  This method is so processor intensive that it
    // might not keep up with the camera's frame rate.  Best used for
    // offline processing where accurate color reproduction is required.
-   FLYCAPTURE_RIGOROUS,   
+   FLYCAPTURE_RIGOROUS,
    // High quality linear interpolation. This algorithm provides similar
    // results to Rigorous, but is up to 30 times faster.
    FLYCAPTURE_HQLINEAR,
@@ -640,10 +625,10 @@ typedef struct FlyCaptureImage
    // The pixel format of this image.
    FlyCapturePixelFormat pixelFormat;
 
-   // This field is always 1 for single lens cameras.  This field is 
-   // used to indicate the number of images contained in the structure 
-   // when dealing with multi-imager systems such as the Bumblebee2 
-   // or XB3’
+   // This field is always 1 for single lens cameras.  This field is
+   // used to indicate the number of images contained in the structure
+   // when dealing with multi-imager systems such as the Bumblebee2
+   // or XB3?
    int iNumImages;
 
    // Reserved for future use.
@@ -812,7 +797,6 @@ flycaptureInitialize(
 		     FlyCaptureContext context,
 		     unsigned long     ulDevice );
 
-
 //-----------------------------------------------------------------------------
 //
 // Name: flycaptureInitializeFromSerialNumber()
@@ -859,25 +843,6 @@ PGRFLYCAPTURE_API FlyCaptureError PGRFLYCAPTURE_CALL_CONVEN
 flycaptureGetCameraInfo(
                         FlyCaptureContext context,
                         FlyCaptureInfoEx* pInfo );
-
-//-----------------------------------------------------------------------------
-//
-// Name: flycaptureGetCameraInfo()
-//
-// Description:
-//   Retrieves information about the camera.
-//
-// Arguments:
-//   context - The FlyCaptureContext associated with the camera.
-//   pInfo   - Receives the camera information.
-//
-// Returns:
-//   A FlyCaptureError indicating the success or failure of the function.
-//
-PGRFLYCAPTURE_API FlyCaptureError PGRFLYCAPTURE_CALL_CONVEN
-flycaptureGetDriverInfo(
-                        FlyCaptureContext context,
-                        FlyCaptureDriverInfo* pInfo );
 
 
 //-----------------------------------------------------------------------------
@@ -1131,8 +1096,6 @@ flycaptureGetColorProcessingMethod(
 //   flycaptureGetColorProcessingMethod()
 //
 // Remarks:
-//  The Nearest Neighbor method has been remapped internally to Nearest
-//  Neighbor Fast due to observed artifacts with the original method.
 //  This function is only applicable when using the SDK and driver with cameras
 //  that do not do on board color processing. See the definition of
 //  FlyCaptureColorMethod for detailed descriptions of the available modes.
@@ -1396,9 +1359,9 @@ flycaptureStop(
 //
 // Description:
 //   This function allows the user to set the timeout value for
-//   flycaptureGrabImage*(), flycaptureLockLatest() and flycaptureLockNext().  
-//   This is not normally necessary but can be useful in specific applications.  
-//   For example, setting uiTimeout to be 0 will result in non-blocking 
+//   flycaptureGrabImage*(), flycaptureLockLatest() and flycaptureLockNext().
+//   This is not normally necessary but can be useful in specific applications.
+//   For example, setting uiTimeout to be 0 will result in non-blocking
 //   grab call.
 //
 // Arguments:
@@ -2232,7 +2195,7 @@ PGRFLYCAPTURE_API FlyCaptureError PGRFLYCAPTURE_CALL_CONVEN
 flycaptureGetMemoryChannel(
                               FlyCaptureContext context,
                               unsigned int*     puiCurrentChannel,
-                              unsigned int*     puiNumChannels );
+                              unsigned int*     puiNumChannels = 0 );
 
 
 //-----------------------------------------------------------------------------
@@ -2422,8 +2385,8 @@ flycaptureGetTrigger(
 //   bOnOff       - Turn the trigger on or off.
 //   iPolarity    - The polarity of the trigger. 1 or 0.
 //   iSource      - The new trigger source.  Corresponds to the source mask.
-//   iMode        - The new trigger mode.  
-//   iParameter   - The (optional) parameter to the trigger function, required by some trigger modes. For more information, see http://www.ptgrey.com/support/kb/index.asp?a=4&q=239.
+//   iMode        - The new trigger mode.  Corresponds to the mode mask.
+//   iParameter   - The (optional) parameter to the trigger function, if required.
 //
 // Returns:
 //   A FlyCaptureError indicating the success or failure of the function.
@@ -2456,7 +2419,7 @@ flycaptureSetTrigger(
 //   bOnOff       - Turn the trigger on or off.
 //   iPolarity    - The polarity of the trigger. 1 or 0.
 //   iSource      - The new trigger source.  Corresponds to the source mask.
-//   iMode        - The new trigger mode.  
+//   iMode        - The new trigger mode.  Corresponds to the mode mask.
 //   iParameter   - The (optional) parameter to the trigger function, if required.
 //
 // Returns:
@@ -2598,7 +2561,7 @@ flycaptureQueryStrobe(
 //   context        - The context associated with the camera to be queried.
 //   pbAvailable    - NULL or a parameter which indicates if the LUT is supported
 //   puiNumChannels - NULL or a parameter which indicates the number of
-//                    available channels.  NOTE some cameras will return
+//                    available channels.  NOTE: some cameras will return
 //                    available, but zero channels.  Typically, these cameras
 //                    will have a single channel and not support turning the
 //                    LUT off.

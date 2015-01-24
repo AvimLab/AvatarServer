@@ -16,129 +16,29 @@ BlobTracker::BlobTracker()
 {
 	IDCounter = 200;
 	isCalibrating = false;
-	camWidth = 320;
-	camHeight = 240;
-	//Initialise Object Blobs
-	for(int i = 180;i<200;i++)
-	{
-		trackedObjects[i].id = -1;
-		trackedObjects[i].lastTimeTimeWasChecked = 0;
-	}
-}
-
-void BlobTracker::setCameraSize(int width,int height)
-{
-	camWidth = width;
-	camHeight = height;
-}
-
-void BlobTracker::passInFiducialInfo(ofxFiducialTracker*	_fidfinder)
-{
-	fidfinder = _fidfinder;
-}
-void BlobTracker::doFiducialCalculation()
-{	
-	for(list<ofxFiducial>::iterator fiducial = fidfinder->fiducialsList.begin();fiducial!=fidfinder->fiducialsList.end();++fiducial)
-	{
-		fiducial->x_pos = fiducial->getX();
-		fiducial->y_pos = fiducial->getY();
-		fiducial->x_pos/=camWidth;
-		fiducial->y_pos/=camHeight;
-	}
 }
 
 BlobTracker::~BlobTracker()
 {
+	delete calibrate;
 }
 
+void BlobTracker::passInCalibration(CalibrationUtils* calibrater) 
+{
+    calibrate = calibrater;
+}
 
 //assigns IDs to each blob in the contourFinder
 void BlobTracker::track(ContourFinder* newBlobs)
 {
-/*********************************************************************
-//Object tracking
-*********************************************************************/
-
-	for(std::map<int,Blob>::iterator tracked=trackedObjects.begin();tracked != trackedObjects.end(); ++tracked)
-	{//iterate through the tracked blobs and check if any of these are present in current blob list, else delete it (mark id = -1)
-		int id= tracked->second.id;
-		bool isFound=false; // The variable to check if the blob is in the new blobs list or not
-		for(std::vector<Blob>::iterator blob = newBlobs->objects.begin();blob!=newBlobs->objects.end();++blob)
-		{
-			if(blob->id == id)
-			{
-				isFound=true;
-				break;
-			}
-		}
-
-		if(!isFound) // current tracked blob was not found in the new blob list
-		{
-			trackedObjects[id].id = -1;
-		}
-	}
 	//handle the object tracking if present
 	for (int i = 0; i < newBlobs->nObjects; i++)
 	{
-		int ID = newBlobs->objects[i].id;
+		calibratedObjects[i]=newBlobs->objects[i];
 
-		int now = ofGetElapsedTimeMillis();
-
-		if(trackedObjects[ID].id == -1) //If this blob has appeared in the current frame
-		{
-			calibratedObjects[i]=newBlobs->objects[i];
-
-			calibratedObjects[i].D.x=0;
-			calibratedObjects[i].D.y=0;
-			calibratedObjects[i].maccel=0;
-			calibratedObjects[i].A = 0;
-			calibratedObjects[i].raccel = 0;
-			
-			
-			//Camera to Screen Position Conversion
-			calibratedObjects[i].centroid.x/=camWidth;
-			calibratedObjects[i].centroid.y/=camHeight;
-			calibratedObjects[i].angleBoundingRect.width/=camWidth;
-			calibratedObjects[i].angleBoundingRect.height/=camHeight;
-		}
-		else //Do all the calculations
-		{
-			float xOld = trackedObjects[ID].centroid.x;
-			float yOld = trackedObjects[ID].centroid.y;
-
-			float xNew = newBlobs->objects[i].centroid.x;
-			float yNew = newBlobs->objects[i].centroid.y;
-
-			//converting xNew and yNew to calibrated ones
-			xNew/=camWidth;
-			yNew/=camHeight;
-
-			double dx = xNew-xOld;
-			double dy = yNew-yOld;
-
-			calibratedObjects[i] = newBlobs->objects[i];
-			calibratedObjects[i].D.x = dx;
-			calibratedObjects[i].D.y = dy;
-
-			calibratedObjects[i].maccel = sqrtf((dx*dx+dy*dy)/(now - trackedObjects[ID].lastTimeTimeWasChecked));
-			calibratedObjects[i].A = (((calibratedObjects[i].angle - trackedObjects[ID].angle)/(2*PI))/(now - trackedObjects[ID].lastTimeTimeWasChecked));
-			calibratedObjects[i].raccel = (calibratedObjects[i].A - trackedObjects[ID].A)/(now - trackedObjects[ID].lastTimeTimeWasChecked);
-	
-			calibratedObjects[i].centroid.x/=camWidth;
-			calibratedObjects[i].centroid.y/=camHeight;
-			calibratedObjects[i].angleBoundingRect.width/=camWidth;
-			calibratedObjects[i].angleBoundingRect.height/=camHeight;
-		}
-		trackedObjects[ID] = newBlobs->objects[i];
-		trackedObjects[ID].lastTimeTimeWasChecked = now;
-		trackedObjects[ID].centroid.x = calibratedObjects[i].centroid.x;
-		trackedObjects[ID].centroid.y = calibratedObjects[i].centroid.y;
+		//Camera to Screen Position Conversion
+		calibrate->cameraToScreenPosition(calibratedObjects[i].centroid.x,calibratedObjects[i].centroid.y);
 	}
-
-
-/****************************************************************************
-	//Finger tracking
-****************************************************************************/
 
 	//initialize ID's of all blobs
 	for(int i=0; i<newBlobs->nBlobs; i++)
@@ -168,10 +68,8 @@ void BlobTracker::track(ContourFinder* newBlobs)
 				TouchEvents.RAWmessenger = trackedBlobs[i];
 				TouchEvents.notifyRAWTouchUp(NULL);
 			}
-			TouchEvents.messenger.boundingRect.width/=camWidth;
-			TouchEvents.messenger.boundingRect.height/=camHeight;
-			TouchEvents.messenger.centroid.x/=camWidth;
-			TouchEvents.messenger.centroid.y/=camHeight;
+			calibrate->transformDimension(TouchEvents.messenger.boundingRect.width, TouchEvents.messenger.boundingRect.height);
+			calibrate->cameraToScreenPosition(TouchEvents.messenger.centroid.x, TouchEvents.messenger.centroid.y);
 			//erase calibrated blob from map
 			calibratedBlobs.erase(TouchEvents.messenger.id);
 
@@ -242,11 +140,9 @@ void BlobTracker::track(ContourFinder* newBlobs)
 							TouchEvents.RAWmessenger = trackedBlobs[j];
 							TouchEvents.notifyRAWTouchUp(NULL);
 						}
-						TouchEvents.messenger.boundingRect.width/=camWidth;
-						TouchEvents.messenger.boundingRect.height/=camHeight;
-						TouchEvents.messenger.centroid.x/=camWidth;
-						TouchEvents.messenger.centroid.y/=camHeight;
 
+                        calibrate->transformDimension(TouchEvents.messenger.boundingRect.width, TouchEvents.messenger.boundingRect.height);
+                        calibrate->cameraToScreenPosition(TouchEvents.messenger.centroid.x, TouchEvents.messenger.centroid.y);
 						//erase calibrated blob from map
 						calibratedBlobs.erase(TouchEvents.messenger.id);
 
@@ -265,10 +161,9 @@ void BlobTracker::track(ContourFinder* newBlobs)
 							TouchEvents.RAWmessenger = trackedBlobs[i];
 							TouchEvents.notifyRAWTouchUp(NULL);
 						}
-						TouchEvents.messenger.boundingRect.width/=camWidth;
-						TouchEvents.messenger.boundingRect.height/=camHeight;
-						TouchEvents.messenger.centroid.x/=camWidth;
-						TouchEvents.messenger.centroid.y/=camHeight;
+
+                        calibrate->transformDimension(TouchEvents.messenger.boundingRect.width, TouchEvents.messenger.boundingRect.height);
+                        calibrate->cameraToScreenPosition(TouchEvents.messenger.centroid.x, TouchEvents.messenger.centroid.y);
 						//erase calibrated blob from map
 						calibratedBlobs.erase(TouchEvents.messenger.id);
 
@@ -383,12 +278,9 @@ void BlobTracker::track(ContourFinder* newBlobs)
 						}
 
 						//calibrated values
-						TouchEvents.messenger.boundingRect.width/=camWidth;
-						TouchEvents.messenger.boundingRect.height/=camHeight;
-						TouchEvents.messenger.centroid.x/=camWidth;
-						TouchEvents.messenger.centroid.y/=camHeight;
-						TouchEvents.messenger.lastCentroid.x/=camWidth;
-						TouchEvents.messenger.lastCentroid.y/=camHeight;
+						calibrate->transformDimension(TouchEvents.messenger.boundingRect.width, TouchEvents.messenger.boundingRect.height);
+						calibrate->cameraToScreenPosition(TouchEvents.messenger.centroid.x, TouchEvents.messenger.centroid.y);
+						calibrate->cameraToScreenPosition(TouchEvents.messenger.lastCentroid.x, TouchEvents.messenger.lastCentroid.y);
 						
 						//Calibrated dx/dy
 						TouchEvents.messenger.D.set(trackedBlobs[i].centroid.x - trackedBlobs[i].lastCentroid.x, 
@@ -421,14 +313,9 @@ void BlobTracker::track(ContourFinder* newBlobs)
 						}
 
 						//calibrated values
-						TouchEvents.messenger.boundingRect.width/=camWidth;
-						TouchEvents.messenger.boundingRect.height/=camHeight;
-
-						TouchEvents.messenger.centroid.x/=camWidth;
-						TouchEvents.messenger.centroid.y/=camHeight;
-
-						TouchEvents.messenger.lastCentroid.x/=camWidth;
-						TouchEvents.messenger.lastCentroid.y/=camHeight;
+						calibrate->transformDimension(TouchEvents.messenger.boundingRect.width, TouchEvents.messenger.boundingRect.height);
+						calibrate->cameraToScreenPosition(TouchEvents.messenger.centroid.x, TouchEvents.messenger.centroid.y);
+						calibrate->cameraToScreenPosition(TouchEvents.messenger.lastCentroid.x, TouchEvents.messenger.lastCentroid.y);
 
 						//Calibrated dx/dy
 						TouchEvents.messenger.D.set(trackedBlobs[i].centroid.x - trackedBlobs[i].lastCentroid.x, 
@@ -484,12 +371,8 @@ void BlobTracker::track(ContourFinder* newBlobs)
 				TouchEvents.RAWmessenger = newBlobs->blobs[i];
 				TouchEvents.notifyRAWTouchDown(NULL);
 			}
-			TouchEvents.messenger.boundingRect.width/=camWidth;
-			TouchEvents.messenger.boundingRect.height/=camHeight;      
-
-			TouchEvents.messenger.centroid.x/=camWidth;
-			TouchEvents.messenger.centroid.y/=camHeight;
-
+            calibrate->transformDimension(TouchEvents.messenger.boundingRect.width, TouchEvents.messenger.boundingRect.height);
+            calibrate->cameraToScreenPosition(TouchEvents.messenger.centroid.x, TouchEvents.messenger.centroid.y);
 			//add to calibrated blob map
 			calibratedBlobs[TouchEvents.messenger.id] = TouchEvents.messenger;
 

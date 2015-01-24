@@ -2,7 +2,6 @@
 #define OF_BMP_TYPE
 
 #include "ofConstants.h"
-#include "ofTexture.h"
 
 
 /*
@@ -14,12 +13,7 @@
  
  */
 
-#ifndef TARGET_OPENGLES	
 void  ofDrawBitmapCharacter(int character );
-#else
-void  ofDrawBitmapCharacter(int character, int x , int y );
-#endif
-
 
 #endif
 

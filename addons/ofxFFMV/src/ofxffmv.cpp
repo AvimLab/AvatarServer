@@ -1,192 +1,126 @@
-/*
-*  ofxffmv.cpp
-*  
-*
-*  Created on 12/03/11.
-*  Copyright 2011 NUI Group. All rights reserved.
-*  Author: Anatoly Churikov
-*
-*/
-
 #include "ofxffmv.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+
 #pragma warning(disable : 4018)	// signed/unsigned mismatch
 
 ofxffmv::ofxffmv()
-{	
-}
+{
+    fcCameraID=0;
 
+    //First assume there are MAX_CAMS.Then this variable is modified to the
+    //true camera number after listDevices() is called.
+    camNum=_MAX_CAMS;
+}
+void ofxffmv::listDevices()
+{
+    printf("The following are FFMV\n");
+    // This function enumerates all the cameras found on the machine, across
+    // all 1394 buses and cards. It fills an array of FlyCaptureInfoEx
+    // structures with all of the pertinent information from the attached
+    // cameras. The index of a given FlyCaptureInfoEx structure in the array
+    // parInfo is the device number.
+   flycaptureBusEnumerateCamerasEx( arInfo, &camNum );
+	for( unsigned int uiBusIndex = 0; uiBusIndex < camNum; uiBusIndex++ )
+   {
+      FlyCaptureInfoEx* pinfo = &arInfo[ uiBusIndex ];
+      printf(
+		  "Index %u: %s, SerialNumber:  %u\n",
+         uiBusIndex,
+         pinfo->pszModelName,
+         pinfo->SerialNumber );
+   }
+   printf("end of listing FFMV\n\n");
+}
+void ofxffmv::setDeviceID(int id)
+{
+    fcCameraID=id;
+}
+int ofxffmv::getDeviceID()
+{
+    return fcCameraID;
+}
+void ofxffmv::initFFMV(int wid,int hei,int startX,int startY)
+{
+    for(int i=0;i<camNum;i++)
+    {
+    //
+	// Create the context. This call must be made before any other calls to
+	// to the context are made, as a valid context is needed for all
+	// camera-specific FlyCapture library calls. This call sets the context
+	// to the default settings, but flycaptureInitialize() must be called
+	// below to fully initialize the camera for use.
+	flycaptureCreateContext( &context[i] );
+	//
+	// Initialize the camera. This call initializes one of the cameras on the
+	// bus with the FlyCaptureContext that is passed in. This should generally
+	// be called right after creating the context but before doing anything
+	// else.
+	//
+	// This call performs several functions. It sets the camera to communicate
+	// at the proper bus speed, turns on color processing (if available) and
+	// sets the Bayer orientation to the correct setting. Finally, it also
+	// initializes the white balance tables for cameras that support that
+	// function.
+	//
+	flycaptureInitialize( context[i], i );
+	//
+	// Start grabbing images in the current videomode and framerate. Driver
+	// level image buffer allocation is performed at this point. After this
+	// point, images will be constantly grabbed by the camera and stored
+	// in the buffers on the PC.
+	if(wid==640)
+	flycaptureStartCustomImage(context[i],0,startX,startY,640,480,100,FLYCAPTURE_MONO8);
+	else if(wid==320)
+	flycaptureStartCustomImage(context[i],1,startX,startY,320,240,100,FLYCAPTURE_MONO8);
+	flycaptureGrabImage2( context[i], &fcImage[i] );
+	//camWidth=fcImage.iCols;
+	//camHeight=fcImage.iRows;
+    }//end of for loop
+}
+void ofxffmv::grabFrame()
+{
+    //
+    // Grab an image. This obtains an pointer to the latest full
+    // image captured by the camera and saved in the image buffer.
+    //
+    // flycaptureGrabImage2 is used instead of flycaptureGrabImage because
+    // it returns a FlyCaptureImage structure, which is generally easier to
+    // work with.
+    //
+    flycaptureGrabImage2( context[fcCameraID], &fcImage[fcCameraID] );
+}
+int ofxffmv::getDeviceCount()
+{
+	// Get number of PGRCameras
+	unsigned int uiPGRCameraCount;
+	flycaptureBusCameraCount(&uiPGRCameraCount);
+	return uiPGRCameraCount;
+}
+int ofxffmv::getCamWidth()
+{
+    camWidth=fcImage[fcCameraID].iCols;
+    return camWidth;
+}
+int ofxffmv::getCamHeight()
+{
+    camHeight=fcImage[fcCameraID].iRows;
+    return camHeight;
+}
+//Clean up
 ofxffmv::~ofxffmv()
 {
-	deinitializeCamera();
-}
-
-void ofxffmv::callSettingsDialog()
-{
-	pgrcamguiInitializeSettingsDialog(cameraContext,guiContext);
-}
-
-CAMERA_BASE_FEATURE* ofxffmv::getSupportedFeatures(int* featuresCount)
-{
-	*featuresCount = 7;
-	CAMERA_BASE_FEATURE* features = (CAMERA_BASE_FEATURE*)malloc(*featuresCount * sizeof(CAMERA_BASE_FEATURE));
-	features[0] = BASE_BRIGHTNESS;
-	features[1] = BASE_EXPOSURE;
-	features[2] = BASE_SATURATION;
-	features[3] = BASE_GAMMA;
-	features[4] = BASE_SHUTTER;
-	features[5] = BASE_GAIN;
-	features[6] = BASE_FRAMERATE;
-	return features;
-}
-
-void ofxffmv::setCameraFeature(CAMERA_BASE_FEATURE featureCode,int firstValue,int secondValue,bool isAuto,bool isEnabled)
-{
-	FlyCaptureProperty deviceProperty = (FlyCaptureProperty)0xFFFFFFFF;
-	switch (featureCode)
-	{
-	case BASE_BRIGHTNESS:
-		deviceProperty = FLYCAPTURE_BRIGHTNESS;
-		break;
-	case BASE_EXPOSURE:
-		deviceProperty = FLYCAPTURE_AUTO_EXPOSURE;
-		break;
-	case BASE_SATURATION:
-		deviceProperty = FLYCAPTURE_SATURATION;
-		break;
-	case BASE_GAMMA:
-		deviceProperty = FLYCAPTURE_GAMMA;
-		break;
-	case BASE_SHUTTER:
-		deviceProperty = FLYCAPTURE_SHUTTER;
-		break;
-	case BASE_GAIN:
-		deviceProperty = FLYCAPTURE_GAIN;
-		break;
-	case BASE_FRAMERATE:
-		deviceProperty = FLYCAPTURE_FRAME_RATE;
-		framerate = firstValue;
-		break;
+	if(getDeviceCount() > 0){
+		for(int i=0;i<camNum;i++)
+		{
+		// Stop the camera. This does not destroy the context. This simply stops
+		// the grabbing of images from the camera. This should always be called
+		// prior to calling flycaptureDestroyContext().
+		//
+		flycaptureStop( context[i] );
+		//
+		// Destroy the context. This should always be called before exiting
+		// the application to prevent memory leaks.
+		//
+		flycaptureDestroyContext( context[i] );
+		}//end of for loop
 	}
-	if (deviceProperty!=0xFFFFFFFF)
-		flycaptureSetCameraPropertyEx(cameraContext,deviceProperty,true,isEnabled,isAuto,firstValue,secondValue);
-}
-
-void ofxffmv::getCameraFeature(CAMERA_BASE_FEATURE featureCode,int* firstValue,int* secondValue, bool* isAuto, bool* isEnabled,int* minValue,int* maxValue)
-{
-	*firstValue = 0;
-	*secondValue = 0;
-	*isAuto = false;
-	*isEnabled = false;
-	*minValue = 0;
-	*maxValue = 0;
-	FlyCaptureProperty deviceProperty = (FlyCaptureProperty)0xFFFFFFFF;
-	switch (featureCode)
-	{
-	case BASE_BRIGHTNESS:
-		deviceProperty = FLYCAPTURE_BRIGHTNESS;
-		break;
-	case BASE_EXPOSURE:
-		deviceProperty = FLYCAPTURE_AUTO_EXPOSURE;
-		break;
-	case BASE_SATURATION:
-		deviceProperty = FLYCAPTURE_SATURATION;
-		break;
-	case BASE_GAMMA:
-		deviceProperty = FLYCAPTURE_GAMMA;
-		break;
-	case BASE_SHUTTER:
-		deviceProperty = FLYCAPTURE_SHUTTER;
-		break;
-	case BASE_GAIN:
-		deviceProperty = FLYCAPTURE_GAIN;
-		break;
-	case BASE_FRAMERATE:
-		deviceProperty = FLYCAPTURE_FRAME_RATE;
-		break;
-	}
-	bool bpPresent,bpOnePush,pbReadOut,pbOnOff,pbAuto,pbManual;
-	if (deviceProperty!=0xFFFFFFFF)
-	{
-		*isEnabled = (flycaptureGetCameraProperty(cameraContext,deviceProperty,(long*)firstValue,(long*)secondValue,isAuto) == FLYCAPTURE_OK);
-		flycaptureGetCameraPropertyRangeEx(cameraContext,deviceProperty,&bpPresent,&bpOnePush,&pbReadOut,&pbOnOff,&pbAuto,&pbManual,minValue,maxValue);
-	}
-	else
-		*isEnabled = false;
-}
-
-int ofxffmv::getCameraBaseCount()
-{
-   unsigned int tcamNum = _MAX_CAMERAS_;
-   FlyCaptureInfoEx* tArInfo = new FlyCaptureInfoEx[_MAX_CAMERAS_];
-   flycaptureBusEnumerateCamerasEx( tArInfo, &tcamNum );
-   delete tArInfo;
-   return tcamNum;
-}
-
-void ofxffmv::getNewFrame(unsigned char* newFrame)
-{
-	flycaptureGrabImage2(cameraContext,&fcImage);
-	memcpy((void*)newFrame,fcImage.pData,width * height * depth * sizeof(unsigned char));
-}
-
-void ofxffmv::setCameraType()
-{
-	cameraType = FFMV;
-	cameraTypeName = "FFMV";
-}
-
-void ofxffmv::cameraInitializationLogic()
-{
-	FlyCaptureInfoEx* tempArInfo = new FlyCaptureInfoEx[_MAX_CAMERAS_];
-	unsigned int camNum = _MAX_CAMERAS_;
-	flycaptureBusEnumerateCamerasEx( tempArInfo, &camNum );
-	for (int i=0;i<camNum;i++)
-	{
-		if ((unsigned long)tempArInfo[i].SerialNumber == guid.Data1)
-			index = i;
-	}
-	arInfo = tempArInfo[index];
-	flycaptureCreateContext(&cameraContext);
-	flycaptureInitialize( cameraContext, index );
-	flycaptureStartCustomImage(cameraContext,(unsigned int)cameraPixelMode,left,top,width,height,100,depth == 1 ? (arInfo.CameraType == FLYCAPTURE_COLOR ? FLYCAPTURE_RAW8 :  FLYCAPTURE_MONO8) : FLYCAPTURE_RGB8);
-	flycaptureGrabImage2( cameraContext, &fcImage );
-	width = fcImage.iCols;
-	height = fcImage.iRows;
-	depth = (width*height!=0) ? fcImage.iRowInc/fcImage.iRows : 0;
-	flycaptureSetColorProcessingMethod( cameraContext,depth == 1 ? FLYCAPTURE_DISABLE : FLYCAPTURE_NEAREST_NEIGHBOR_FAST);
-	for (int i=0;i<cameraBaseSettings->propertyType.size();i++)
-		setCameraFeature(cameraBaseSettings->propertyType[i],cameraBaseSettings->propertyFirstValue[i],cameraBaseSettings->propertySecondValue[i],cameraBaseSettings->isPropertyAuto[i],cameraBaseSettings->isPropertyOn[i]);
-	pgrcamguiCreateContext(&guiContext);
-	delete tempArInfo;
-}
-
-void ofxffmv::cameraDeinitializationLogic()
-{
-	flycaptureStop( cameraContext );
-	flycaptureDestroyContext( cameraContext );
-	pgrcamguiDestroyContext(guiContext);
-}
-
-
-GUID* ofxffmv::getBaseCameraGuids(int* camCount)
-{
-	*camCount = 0;
-	unsigned int tcamNum = _MAX_CAMERAS_;
-	FlyCaptureInfoEx* tArInfo = new FlyCaptureInfoEx[_MAX_CAMERAS_];
-	flycaptureBusEnumerateCamerasEx( tArInfo, &tcamNum );
-	*camCount = tcamNum;
-	GUID* guids = (GUID*)malloc(tcamNum*sizeof(GUID));
-	for (int i=0;i<tcamNum;i++)
-	{
-		GUID guid2;
-		guid2.Data1 = tArInfo[i].SerialNumber;
-		guid2.Data2 = guid2.Data3 = 0;
-		memset((void*)guid2.Data4,0,8*sizeof(unsigned char));
-		guids[i] = guid2;
-	}
-	delete tArInfo;
-	return guids;
 }

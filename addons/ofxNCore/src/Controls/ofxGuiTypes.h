@@ -24,7 +24,7 @@
 //	----------------------------------------------------------------------------------------------------
 
 #define OFXGUI_VERSION			"0.10"
-#define OFXGUI_XML				"xml/gui_settings.xml"
+#define OFXGUI_XML				"ofxGui.xml"
 
 #define OFXGUI_PANEL_BORDER		10
 #define OFXGUI_PANEL_SPACING	10
@@ -34,9 +34,6 @@
 #define OFXGUI_SLIDER_HEIGHT	10
 #define OFXGUI_COLOR_HEIGHT		30
 #define OFXGUI_MATRIX_SPACING	 6
-
-//! Add by Yishi Guo
-#define OFXGUI_DBLCLICK_INTERVAL 300 // ms
 
 //	----------------------------------------------------------------------------------------------------
 
@@ -72,11 +69,6 @@ enum
 	kofxGui_Object_Knob,
 	kofxGui_Object_Radar,
 	kofxGui_Object_Switch,
-
-	kofxGui_Object_Text,	//< added by Yishi Guo
-	kofxGui_Object_Grid,	//< added by Yishi Guo 2011-06-06
-	kofxGui_Object_Image,	//< added by Yishi Guo 2011-06-10
-	kofxGui_Object_Arrow,	//< added by Yishi Guo 2011-06-11
 };
 
 enum
@@ -130,22 +122,6 @@ enum
 	kofxGui_Set_IntArray,
 	kofxGui_Set_FloatArray,
 	kofxGui_Set_String,
-
-	kofxGui_Set_Grid_Dragging,
-	kofxGui_Set_Grid_Released,
-};
-
-enum {	//! Added by Yishi Guo 2011-06-11
-	kofxGui_Arrow_Up,
-	kofxGui_Arrow_Down,
-	kofxGui_Arrow_Right,
-	kofxGui_Arrow_Left,
-};
-
-enum {	//! Added by Yishi Guo 2011-06-14
-	kofxGui_Grid_List,
-	kofxGui_Grid_Display,
-	kofxGui_Grid_Selectable,
 };
 
 //	----------------------------------------------------------------------------------------------------

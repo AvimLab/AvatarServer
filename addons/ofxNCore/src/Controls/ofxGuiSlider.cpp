@@ -75,9 +75,8 @@ bool ofxGuiSlider::update(int id, int task, void* data, int length)
 	if(id == mParamId)
 	{
 		if(task == kofxGui_Set_Float)
-		{
-			setValue((float)*(int*)data);  // This hack is only for CCV original was *(float*)data
-		}
+			setValue(*(float*)data);
+		
 		handled = true;
 	}
 	

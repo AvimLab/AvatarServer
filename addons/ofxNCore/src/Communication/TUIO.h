@@ -11,7 +11,6 @@
 #define TUIO_H
 
 #include "../Tracking/ContourFinder.h"
-#include "ofxFiducial.h"
 #include "ofxOsc.h"
 #include "ofxNetwork.h"
 
@@ -23,8 +22,7 @@ class TUIO
 		
 		//methods
 		void setup(const char* host, int port, int flashport);
-		void sendTUIO(std::map<int, Blob> * fingerBlobs, std::map<int, Blob> * objectBlobs ,std::list <ofxFiducial> * fiducialsList);
-		void setMode(bool fingers, bool objects, bool fiducials);
+		void sendTUIO(std::map<int, Blob> * blobs);
 
 		//TCP Network 
 		ofxTCPServer 	m_tcpServer;
@@ -33,17 +31,12 @@ class TUIO
 		const char*		localHost;
 		int				TUIOPort;	
 		int				TUIOFlashPort;
-		int				version;
-		int				width,height;
 		bool 			bHeightWidth;
 		bool 			bOSCMode;
 		bool			bTCPMode;
 		bool			bBinaryMode;
 		bool			bIsConnected;
 
-		bool			bFingers;
-		bool			bObjects;
-		bool			bFiducials;
 	private:
 		int				frameseq;
 		bool			send(string message);

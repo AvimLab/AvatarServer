@@ -28,6 +28,11 @@
 #include "ofAppRunner.h"
 
 //--------------------------
+// audio
+#include "ofSoundStream.h"
+#include "ofSoundPlayer.h"
+
+//--------------------------
 // video
 #ifndef TARGET_OF_IPHONE			//(temp for now, until this is ported)
 	#include "ofVideoGrabber.h"
@@ -37,8 +42,5 @@
 //--------------------------
 // events
 #include "ofEvents.h"
-
-#define NULL_CAMERA 0xFF
-#define INF 0xFFFFFFFF
 
 #endif

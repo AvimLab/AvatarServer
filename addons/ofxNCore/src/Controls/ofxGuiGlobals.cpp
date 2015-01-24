@@ -25,13 +25,13 @@ ofxGuiGlobals::ofxGuiGlobals()
 {
 	mXmlfile			= "";
 	
-	mHeadFontName		= "fonts/verdana.ttf";
+	mHeadFontName		= "verdana.ttf";
 	mHeadFontSize		= 10;
 	mHeadFontXOffset	= -2;
 	mHeadFontYOffset	= 8;
 	mHeadFontHeight		= 12;
 	
-	mParamFontName		= "fonts/automat.ttf";
+	mParamFontName		= "automat.ttf";
 	mParamFontSize		= 6;
 	mParamFontXOffset	= -2;
 	mParamFontYOffset	= 6;
@@ -73,7 +73,7 @@ void ofxGuiGlobals::buildFromXml()
 
 	mXml.pushTag("STYLE", 0);
 	
-	mHeadFontName		= mXml.getValue("HEADFONT", "fonts/verdana.ttf");
+	mHeadFontName		= mXml.getValue("HEADFONT", "verdana.ttf");
 	mHeadFontSize		= mXml.getValue("HEADSIZE", 10);
 	mHeadFontXOffset	= mXml.getValue("HEADXOFF", -2);
 	mHeadFontYOffset	= mXml.getValue("HEADYOFF", 8);

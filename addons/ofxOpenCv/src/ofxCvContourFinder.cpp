@@ -69,8 +69,8 @@ int ofxCvContourFinder::findContours( ofxCvGrayscaleImage&  input,
         inputCopy.allocate( _width, _height );
 	}
 
-    inputCopy.setROI( input.getROI() );
     inputCopy = input;
+    inputCopy.setROI( input.getROI() );
 
 	CvSeq* contour_list = NULL;
 	contour_storage = cvCreateMemStorage( 1000 );
@@ -156,7 +156,6 @@ void ofxCvContourFinder::draw( float x, float y, float w, float h ) {
         y -= anchor.y;
     }
 
-    ofPushStyle();
 	// ---------------------------- draw the bounding rectangle
 	ofSetColor(0xDD00CC);
     glPushMatrix();
@@ -182,7 +181,6 @@ void ofxCvContourFinder::draw( float x, float y, float w, float h ) {
 
 	}
 	glPopMatrix();
-	ofPopStyle();
 }
 
 //--------------------------------------------------------------------------------

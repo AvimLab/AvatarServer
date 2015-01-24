@@ -119,13 +119,10 @@
 #ifdef TARGET_OF_IPHONE
 	#import <OpenGLES/ES1/gl.h>
 	#import <OpenGLES/ES1/glext.h>
-	
-	#define TARGET_LITTLE_ENDIAN		// arm cpu	
 #endif
 
 
 #ifndef __MWERKS__
-#include <cstdlib>
 #define OF_EXIT_APP(val)		std::exit(val);
 #else
 #define OF_EXIT_APP(val)		std::exit(val);
@@ -186,7 +183,9 @@
 #endif
 
 // comment out this line to disable all poco related code
-#define OF_USING_POCO
+#ifndef TARGET_OF_IPHONE
+	#define OF_USING_POCO
+#endif
 
 //we don't want to break old code that uses ofSimpleApp
 //so we forward declare ofBaseApp and make ofSimpleApp mean the same thing
@@ -209,18 +208,17 @@ enum ofLogLevel{
 #define OF_SERIAL_ERROR		-1
 
 // core: ---------------------------
-#include <cstdio>
-#include <cstdarg>
-#include <cmath>
-#include <ctime>
-#include <cstdlib>
-#include <string>
+#include <stdio.h>
+#include <stdarg.h>
+#include <math.h>
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
 #include <iostream>
 #include <vector>
-#include <cstring>
+#include <string>
 #include <sstream>  //for ostringsream
 #include <iomanip>  //for setprecision
-#include <fstream>
 using namespace std;
 
 #ifndef PI

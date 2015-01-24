@@ -12,21 +12,11 @@
 class testApp : public ofBaseApp, public TouchListener
 {
 public:
-	testApp(int argc, char *argv[]) 
+	testApp() 
 	{
-		debug = false;
 		TouchEvents.addListener(this);
-		if(argc==2)
-		{
-			printf("Command Line Option Passed : %s\n",argv[1]);
-			if(strcmp(argv[1],"-d")==0)
-			{
-				debug = true;
-			}
-		}
 	}
 	ofxNCoreVision * ccv;
-	bool debug;
 
 	void setup();
 	void update();

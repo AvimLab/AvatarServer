@@ -4,13 +4,6 @@
 #include "ofConstants.h"
 #include "ofGraphics.h"
 
-//Sosolimited: texture compression
-enum ofTexCompression
-{
-	OF_COMPRESS_NONE,
-	OF_COMPRESS_SRGB,
-	OF_COMPRESS_ARB
-};
 
 typedef struct{
 
@@ -28,8 +21,6 @@ typedef struct{
 	bool bFlipTexture;
 	unsigned int textureID;
 
-	//Sosolimited: texture compression
-	ofTexCompression compressionType;
 		
 }ofTextureData;
 
@@ -85,8 +76,6 @@ class ofTexture : public ofBaseDraws{
 	
 	void setTextureWrap(GLint wrapModeHorizontal, GLint wrapModeVertical);
 	void setTextureMinMagFilter(GLint minFilter, GLint maxFilter);
-
-	void setCompression(ofTexCompression compression);
 
 	bool bAllocated();
 

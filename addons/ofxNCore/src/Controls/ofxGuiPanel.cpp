@@ -16,7 +16,6 @@
 ofxGuiPanel::ofxGuiPanel()
 {
 	mParamType = kofxGui_Object_Panel;
-	isTransparent = false;
 }
 
 //	----------------------------------------------------------------------------------------------------
@@ -34,11 +33,7 @@ void ofxGuiPanel::init(int id, string name, int x, int y, int border, int spacin
 	mBorder			= border;
 	mSpacing		= spacing;
 	
-	adjustToNewContent(
-		roundInt(
-		mGlobals->mHeadFont.stringWidth(name)
-		),
-		textHeight);
+	adjustToNewContent(roundInt(mGlobals->mHeadFont.stringWidth(name)), textHeight);
 }
 
 //	----------------------------------------------------------------------------------------------------
@@ -70,7 +65,8 @@ void ofxGuiPanel::draw()
 
 		ofFill();
 		
-		glColor4f(mGlobals->mCoverColor.r, mGlobals->mCoverColor.g, mGlobals->mCoverColor.b,isTransparent ? 0.0f : mGlobals->mCoverColor.a);
+		//	background
+		glColor4f(mGlobals->mCoverColor.r, mGlobals->mCoverColor.g, mGlobals->mCoverColor.b, mGlobals->mCoverColor.a);
 		ofRect(0.0f, 0.0f, mObjWidth, mObjHeight);
 	
 		ofNoFill();
@@ -81,7 +77,7 @@ void ofxGuiPanel::draw()
 		if(mBorder > 0)
 		{
 			//	border
-			glColor4f(mGlobals->mBorderColor.r, mGlobals->mBorderColor.g, mGlobals->mBorderColor.b, isTransparent ? 0.0f : mGlobals->mBorderColor.a);
+			glColor4f(mGlobals->mBorderColor.r, mGlobals->mBorderColor.g, mGlobals->mBorderColor.b, mGlobals->mBorderColor.a);
 			ofRect(0.0f, 0.0f, mObjWidth, mObjHeight);
 		}
 	
@@ -326,76 +322,6 @@ ofxGuiObject* ofxGuiPanel::addSwitch(int id, string name, int width, int height,
 	adjustToNewContent(swtch->mObjWidth, swtch->mObjHeight + offset);
 	
 	return swtch;
-}
-
-//	----------------------------------------------------------------------------------------------------
-
-ofxGuiObject* ofxGuiPanel::addLabel( int id, string name, int width, int height, string text, ofRGBA fontColor, string fontName, int fontSize ) {
-	int offset = (mObjects.size() == 0 && mParamName == "" ) ? 0 : mSpacing;
-
-	ofxGuiLabel* label = new ofxGuiLabel();
-	label->init( id, name, mBorder, mObjHeight - mBorder + offset, width, height, text, fontName, fontSize, fontColor );
-	mObjects.push_back( label );
-
-	adjustToNewContent( label->mObjWidth, label->mObjHeight + offset );
-
-	return label;
-}
-
-//	----------------------------------------------------------------------------------------------------
-
-ofxGuiObject* ofxGuiPanel::addLabel( int id, string name, int width, int height, string text, ofTrueTypeFont* font, ofRGBA color ) {
-	int offset = (mObjects.size() == 0 && mParamName == "" ) ? 0 : mSpacing;
-
-	ofxGuiLabel* label = new ofxGuiLabel();
-	label->init( id, name, mBorder, mObjHeight - mBorder + offset, width, height, text, font, color );
-	mObjects.push_back( label );
-
-	adjustToNewContent( label->mObjWidth, label->mObjHeight + offset );
-
-	return label;
-}
-
-//	----------------------------------------------------------------------------------------------------
-
-ofxGuiObject* ofxGuiPanel::addGrid( int id, string name, int width, int height, int xGrid, int yGrid, int border, int spacing, int mode ) {
-	int offset = (mObjects.size() == 0 && mParamName == "" ) ? 0 : mSpacing;
-
-	ofxGuiGrid* grid = new ofxGuiGrid();
-	grid->init( id, name, mBorder, mObjHeight - mBorder + offset, width, height, xGrid, yGrid, border, spacing, mode );
-	mObjects.push_back( grid );
-
-	adjustToNewContent( grid->mObjWidth, grid->mObjHeight + offset );
-
-	return grid;
-}
-
-//	----------------------------------------------------------------------------------------------------
-
-ofxGuiObject* ofxGuiPanel::addArrow( int id, string name, int width, int height, int direction, int arrowOffset ) {
-	int offset = (mObjects.size() == 0 && mParamName == "" ) ? 0 : mSpacing;
-
-	ofxGuiArrow* arrow = new ofxGuiArrow();
-	arrow->init( id, name, mBorder, mObjHeight - mBorder + offset, width, height, direction, arrowOffset );
-	mObjects.push_back( arrow );
-
-	adjustToNewContent( arrow->mObjWidth, arrow->mObjHeight + offset );
-
-	return arrow;
-}
-
-//	----------------------------------------------------------------------------------------------------
-
-ofxGuiObject* ofxGuiPanel::addImage( int id, string name, int width, int height ){
-	int offset = (mObjects.size() == 0 && mParamName == "" ) ? 0 : mSpacing;
-
-	ofxGuiImage* image = new ofxGuiImage();
-	image->init( id, name, mBorder, mObjHeight - mBorder + offset, width, height );
-	mObjects.push_back( image );
-
-	adjustToNewContent( image->mObjWidth, image->mObjHeight + offset );
-
-	return image;
 }
 
 //	----------------------------------------------------------------------------------------------------

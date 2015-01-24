@@ -29,7 +29,6 @@ public:
 	void	init(int id, string name, int x, int y, int width, int height, bool value, int display);
 	
 	void	setValue(bool value);
-	void	setHighlightMode( bool highlight );	//! Highlight the text
 
 	bool	update(int id, int task, void* data, int length);
 	void	draw();
@@ -42,10 +41,6 @@ public:
 	void	saveToXml();
 	
 	bool	mValue;
-
-private:
-	ofRGBA	color;
-	bool	bHighlightMode;
 };
 
 //	----------------------------------------------------------------------------------------------------

@@ -94,12 +94,7 @@ bool ofxTCPClient::send(string message){
 	// note that you will receive a trailing [/TCP]\0
 	// if sending from here and receiving from receiveRaw or
 	// other applications
-	if(!connected){
-		if(verbose)printf("ofxTCPClient: trying to send while not connected\n");
-		return false;
-	}
-	//message = partialPrevMsg + message + STR_END_MSG;
-	message = partialPrevMsg + message;
+	message = partialPrevMsg + message + STR_END_MSG;
 	message += (char)0; //for flash
 	int ret = TCPClient.SendAll( message.c_str(), message.length() );
 	if( ret == 0 ){
@@ -211,11 +206,7 @@ string ofxTCPClient::receiveRaw(){
 	messageSize = TCPClient.Receive(tmpBuff, TCP_MAX_MSG_SIZE);
 	if(messageSize==0){
 		close();
-	}else if(messageSize<TCP_MAX_MSG_SIZE) {
-        // null terminate!!
-        tmpBuff[messageSize] = 0;
-    }
-
+	}
 	return tmpBuff;
 }
 

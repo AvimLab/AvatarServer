@@ -57,9 +57,6 @@ class ofImage : public ofBaseImage{
 		bool 				loadImage(string fileName);
 		void 				saveImage(string fileName);
 
-		//Sosolimited: texture compression and mipmaps
-		void				setCompression(ofTexCompression compression);
-
 		// getting the data
 		unsigned char * 	getPixels();			// up to you to get this right
 

@@ -14,7 +14,6 @@
 #include "ofxOpenCv.h"
 #include "CPUImageFilter.h"
 #include "GPUImageFilter.h"
-#include "tiled_bernsen_threshold.h"
 
 #define CAMERA_EXPOSURE_TIME  2200.0f
 
@@ -27,6 +26,7 @@ class Filters {
 		camWidth = 320;
 		camHeight = 240;
 		exposureStartTime = CAMERA_EXPOSURE_TIME;
+
 		//filter values
 		threshold = 120;
 		smooth = 0;
@@ -34,20 +34,8 @@ class Filters {
 		highpassNoise = 0;
 		highpassAmp = 0;
 		fLearnRate = 1;
-		bDynamicTH = false;
-		data = NULL;
-		thresholder = NULL;
-		data = NULL;
-	    fiducialThreshold = 32;
-	    thresoldRemoveBackround = false;
-		showProcessedFrame = true;
-		fiducial_tile_size = 32;
-		drawAllData = true;
-
 	  }
-    bool drawAllData;
-    bool showProcessedFrame; 
-	int fiducial_tile_size;
+
     int camWidth;
     int camHeight;
     int exposureStartTime;
@@ -58,19 +46,14 @@ class Filters {
     int highpassBlur;
     int highpassNoise;
     int	highpassAmp;
-	int threshSize;
-    float fLearnRate;// rate to learn background
 
-	int normalizingHighLevel;
-	int normalizingLowLevel;
-	bool isNormalizingOn;
+    float fLearnRate;// rate to learn background
 
     //filter bools
 	bool bLearnBackground;
 	bool bVerticalMirror;
 	bool bHorizontalMirror;
 	bool bDynamicBG;
-	bool bDynamicTH;
 	bool bSmooth;
 	bool bHighpass;
 	bool bAmplify;
@@ -78,13 +61,6 @@ class Filters {
 	bool bTrackDark;
     bool bLearnBakground;
 	bool bMiniMode;
-	unsigned int backHistogram[256];
-
-		TiledBernsenThresholder *thresholder;
-	int fiducialThreshold;
-	bool thresoldRemoveBackround;
-	unsigned char* data;
-
 
     //CPU
     ofxCvGrayscaleImage grayImg;
@@ -92,10 +68,9 @@ class Filters {
     ofxCvGrayscaleImage subtractBg;
     ofxCvGrayscaleImage grayDiff;
     ofxCvGrayscaleImage highpassImg;
-    ofxCvGrayscaleImage amplifyImg;
+    ofxCvGrayscaleImage ampImg;
 	ofxCvShortImage		floatBgImg;
-	
-	ofxCvGrayscaleImage normalizedImg;
+
 
     //GPU
     GLuint			gpuBGTex;
@@ -120,7 +95,6 @@ class Filters {
     virtual void allocateGPU() = 0;
     virtual void applyGPUFilters() = 0;
     virtual void drawGPU() = 0;
-	virtual void updateSettings() {}
 };
 
 

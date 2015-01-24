@@ -79,7 +79,7 @@ int ofxDirList::listDir(string directory){
     dir = opendir(directory.c_str());
 
 	if(dir == NULL){
-		ofLog(OF_LOG_ERROR, "ofxDirList - Error opening directory");
+		ofLog(OF_LOG_ERROR, "ofxDirList - error opening directory");
 		return 0;
 	}else{
 		ofLog(OF_LOG_VERBOSE, "ofxDirList - success opening directory");
@@ -130,6 +130,7 @@ int ofxDirList::listDir(string directory){
                 }
 			}
 		}
+
 		if(skip) continue;
 
 		//finally we store the result
@@ -138,7 +139,6 @@ int ofxDirList::listDir(string directory){
 
 		ofLog(OF_LOG_VERBOSE, "ofxDirList - listing %s ", nameArray.back().c_str());
 	}
-	if(dir != NULL) closedir(dir);
 
 	ofLog(OF_LOG_VERBOSE, "ofxDirList - listed %i files in %s", nameArray.size(), directory.c_str());
 	return nameArray.size();

@@ -23,7 +23,7 @@ void TemplateUtils::addTemplate(ofRectangle rect,ofRectangle minRect, ofRectangl
 //Loads the XML file from templates.xml file. This returns false if the file does not exist
 bool TemplateUtils::loadTemplateXml()
 {
-	if( XML.loadFile("xml/templates.xml") )
+	if( XML.loadFile("templates.xml") )
 	{
 		templates.clear();
 		int numTags=XML.getNumTags("TEMPLATE");
@@ -73,7 +73,7 @@ bool TemplateUtils::loadTemplateXml()
 	}
 	else
 	{
-		printf("\nTemplates.xml could not be loaded. Make sure it is there in data/xml folder\n");
+		printf("\nTemplates.xml could not be loaded. Make sure it is there in data folder\n");
 		templates.clear();
 		return false;
 	}
@@ -99,7 +99,7 @@ void TemplateUtils::saveTemplateXml()
 		
 		XML.popTag();	
 	}
-	XML.saveFile("xml/templates.xml");
+	XML.saveFile("templates.xml");
 	printf("Template is saved\n");
 }
 

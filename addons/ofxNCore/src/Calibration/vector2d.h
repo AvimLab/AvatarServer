@@ -1,4 +1,4 @@
-ï»¿#ifndef __TOUCHLIB_VECTOR2D__
+#ifndef __TOUCHLIB_VECTOR2D__
 #define __TOUCHLIB_VECTOR2D__
 
 
@@ -8,7 +8,7 @@
 	// See www.irrlicht3d.org
 
     // The Irrlicht Engine License
-    // Copyright ?2002-2005 Nikolaus Gebhardt
+    // Copyright © 2002-2005 Nikolaus Gebhardt
     // This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held 
     // liable for any damages arising from the use of this software.
     //

@@ -9,27 +9,10 @@
 
 #include "Calibration.h"
 
-
-Calibration::Calibration() {
-			TouchEvents.addRAWListener(this);
-            ofAddListener(ofEvents.keyPressed, this, &Calibration::_keyPressed);
-            ofAddListener(ofEvents.keyReleased, this, &Calibration::_keyReleased);
-			calibrating = false;
-			bShowTargets = true;
-			bW			= false;
-			bA			= false;
-			bS			= false;
-			bD			= false;
-			targetColor = 0xFF0000;
-			arcAngle    = 0;
-			shouldStart = false;
-			//bCalibrating = false;
-		}
-
 /******************************************************************************
  * The setup function is run once to perform initializations in the application
  *****************************************************************************/
-void Calibration::setup(unsigned int stitchedFrameWidth,unsigned int stitchedFrameHeight,unsigned int cameraGridWidth,unsigned int cameraGridHeight,unsigned int calibrationGridWidth,unsigned int calibrationGridHeight,bool isInterleaveMode)
+void Calibration::setup(int _camWidth, int _camHeight, BlobTracker *trackerIn)
 {
 	/********************
 	 * Initalize Variables
@@ -38,17 +21,17 @@ void Calibration::setup(unsigned int stitchedFrameWidth,unsigned int stitchedFra
 	calibrationParticle.setUseTexture(true);
 
     //Fonts - Is there a way to dynamically change font size?
-	verdana.loadFont("fonts/verdana.ttf", 8, true, true);	   //Font used for small images
-	calibrationText.loadFont("fonts/verdana.ttf", 10, true, true);
-	
-	calibrate.setCalibrationProperties(stitchedFrameWidth,stitchedFrameHeight,cameraGridWidth,cameraGridHeight,calibrationGridWidth,calibrationGridHeight,isInterleaveMode);
+	verdana.loadFont("verdana.ttf", 8, true, true);	   //Font used for small images
+	calibrationText.loadFont("verdana.ttf", 10, true, true);
+
+	//Load Calibration Settings from calibration.xml file
+	calibrate.setCamRes(_camWidth, _camHeight);
+	calibrate.loadXMLSettings();
+
+	tracker = trackerIn;
+	tracker->passInCalibration(&calibrate);
 
 	printf("Calibration is setup!\n\n");
-}
-
-void Calibration::SetTracker(BlobTracker *trackerIn)
-{
-	 tracker = trackerIn;
 }
 
 void Calibration::passInContourFinder(int numBlobs, vector<Blob> blobs) 
@@ -60,9 +43,9 @@ void Calibration::passInContourFinder(int numBlobs, vector<Blob> blobs)
 void Calibration::passInTracker(BlobTracker *trackerIn) 
 {
 	tracker = trackerIn;
+	tracker->passInCalibration(&calibrate);
 }
 
-float xxx,yyy;
 
 /******************************
  *		  CALIBRATION
@@ -85,18 +68,22 @@ void Calibration::doCalibration()
 	ofSetColor(0xFF00FF);
 	//ofSetWindowTitle("Calibration");
 	char reportStr[10240];
-	calibrationText.setLineHeight(22.0f);
+	calibrationText.setLineHeight(20.0f);
 
-	if(!calibrate.bCalibrating)
+	if(calibrate.bCalibrating){
+		sprintf(reportStr,
+				"CALIBRATING: \n\n-To calibrate, touch and hold current circle target until the circle turns white \n-Press [b] to recapture background (if there's false blobs) \n-Press [r] to go back to previous point(s) \n");
+		calibrationText.drawString(reportStr, ofGetWidth()/2 - calibrationText.stringWidth(reportStr)/2, ofGetHeight()/2 - calibrationText.stringHeight(reportStr)/2);
+	}else
 	{
-		sprintf(reportStr,	"CALIBRATION \n\n-Press [c] to start calibrating \n-Press [x] to return main screen \n-Press [b] to recapture background \n-Press [t] to toggle blob targets");
+		sprintf(reportStr,
+				"CALIBRATION \n\n-Press [c] to start calibrating \n-Press [x] to return main screen \n-Press [b] to recapture background \n-Press [t] to toggle blob targets \n\nCHANGING GRID SIZE (number of points): \n\n-Current Grid Size is %i x %i \n-Press [+]/[-] to add/remove points on X axis \n-Press [shift][+]/[-] to add/remove points on Y axis \n\nALINGING BOUNDING BOX TO PROJECTION SCREEN: \n\n-Use arrow keys to move bounding box\n-Press and hold [w],[a],[s],[d] (top, left, bottom, right) and arrow keys to adjust each side\n", calibrate.GRID_X + 1, calibrate.GRID_Y + 1);
 		calibrationText.drawString(reportStr, ofGetWidth()/2 - calibrationText.stringWidth(reportStr)/2, ofGetHeight()/2 - calibrationText.stringHeight(reportStr)/2);
 	}
 }
 
 void Calibration::drawCalibrationPointsAndBox()
 {
-	
     //this all has to do with getting the angle for loading circle
     arcAngle = 0;
 	std::map<int, Blob> trackedBlobs;
@@ -108,8 +95,7 @@ void Calibration::drawCalibrationPointsAndBox()
     }//end loading circle angle
 
     //Get the screen points so we can make a grid
-//	vector2df *screenpts = calibrate.getScreenPoints();
-	vector2df *screenpts = calibrate.drawingPoints;
+	vector2df *screenpts = calibrate.getScreenPoints();
 
 	int i;
 	//For each grid point
@@ -120,7 +106,6 @@ void Calibration::drawCalibrationPointsAndBox()
 		{
 			glPushMatrix();
 			glTranslatef(screenpts[i].X * ofGetWidth(), screenpts[i].Y * ofGetHeight(), 0.0f);
-
 			ofFill();
 			//draw red target circle
 			ofSetColor(targetColor);
@@ -140,13 +125,12 @@ void Calibration::drawCalibrationPointsAndBox()
 	//Draw Bounding Box
 	ofSetColor(0xFFFFFF);
 	ofNoFill();
-	ofRect(0, 0,ofGetWidth(), ofGetHeight());
-	
+	ofRect(calibrate.screenBB.upperLeftCorner.X * ofGetWidth(), calibrate.screenBB.upperLeftCorner.Y * ofGetHeight(),
+		   calibrate.screenBB.getWidth() * ofGetWidth(), calibrate.screenBB.getHeight() * ofGetHeight());
 }
 
 void Calibration::drawCalibrationBlobs()
 {
-	
 	//find blobs
 	std::map<int, Blob> trackedBlobs;
 	std::map<int, Blob>::iterator iter;
@@ -155,9 +139,11 @@ void Calibration::drawCalibrationBlobs()
     {		
         Blob drawBlob;
         drawBlob = iter->second;
+
         //transform height/width to calibrated space
-        drawBlob.boundingRect.width *= ofGetWidth() * 4;
-        drawBlob.boundingRect.height *= ofGetHeight() * 4 ;
+        drawBlob.boundingRect.width *= calibrate.screenBB.getWidth() * ofGetWidth() * 4;
+        drawBlob.boundingRect.height *= calibrate.screenBB.getHeight() * ofGetHeight() * 4 ;
+
         //Draw Fuzzy Circles
         ofEnableAlphaBlending();
         ofImage tempCalibrationParticle;
@@ -185,7 +171,6 @@ void Calibration::drawCalibrationBlobs()
         //set line width back to normal
         glLineWidth(1);
     }
-	
 }
 
 /*****************************************************************************
@@ -195,39 +180,27 @@ void Calibration::RAWTouchUp( Blob b)
 {
 	if(calibrate.bCalibrating)//If Calibrating, register the calibration point on blobOff
 	{
-		if(calibrate.bGoToNextStep) 
-		{
+		if(calibrate.bGoToNextStep) {
 			calibrate.nextCalibrationStep();
 			calibrate.bGoToNextStep = false;
             targetColor = 0xFF0000;
-			if(calibrate.calibrationStep != 0)
-			{
+
+			if(calibrate.calibrationStep != 0){
 				printf("%d (%f, %f)\n", calibrate.calibrationStep, b.centroid.x, b.centroid.y);
 			}
-            else
-			{
+            else{
 				printf("%d (%f, %f)\n", calibrate.GRID_POINTS, b.centroid.x, b.centroid.y);
- 				printf("Calibration complete\n\n");
+				printf("Calibration complete\n\n");
 			}
 		}
 	}
 }
 
 void Calibration::RAWTouchHeld( Blob b) {
-		
-	
+
 	if(calibrate.bCalibrating)//If Calibrating, register the calibration point on blobOff
 	{
-
-//		calibrationText.drawString(reportStr, ofGetWidth()/2 - calibrationText.stringWidth(reportStr)/2, ofGetHeight()/2 - calibrationText.stringHeight(reportStr)/2);
-
-		float leftX = calibrate.drawingPoints[0].X * calibrate.screenWidth;
-		float topY = calibrate.drawingPoints[0].Y * calibrate.screenHeight;
-		float width = calibrate.drawingPoints[(calibrate.GRID_X+1)*(calibrate.GRID_Y+1)-1].X*calibrate.screenWidth - leftX;
-		float height = calibrate.drawingPoints[(calibrate.GRID_X+1)*(calibrate.GRID_Y+1)-1].Y*calibrate.screenHeight - topY;
-		
-		calibrate.cameraPoints[calibrate.calibrationStep] = vector2df(((b.centroid.x-leftX)/width),((b.centroid.y-topY)/height));
-
+		calibrate.cameraPoints[calibrate.calibrationStep] = vector2df(b.centroid.x, b.centroid.y);
 		calibrate.bGoToNextStep = true;
 		targetColor = 0xFFFFFF;
 	}
@@ -275,7 +248,8 @@ void Calibration::DrawCircleLoader(double xctr, double yctr, double radius, doub
 }
 
 /*****************************************************************************
- * KEY EVENTSx			****************************************************/
+ * KEY EVENTS
+ *****************************************************************************/
 void Calibration::_keyPressed(ofKeyEventArgs &e) {
 
 	if(calibrating)
@@ -288,21 +262,130 @@ void Calibration::_keyPressed(ofKeyEventArgs &e) {
                 /***********************
                  * Keys for Calibration
                  ***********************/
-            case 'c':
-                if(calibrate.bCalibrating) 
-				{
+            case 'c': //Enter/Exit Calibration
+                if(calibrate.bCalibrating) {
                     calibrate.bCalibrating = false;
                     printf("Calibration Stoped\n");
-				} 
-				else 
-				{
+				} else {
 					calibrate.beginCalibration();
                     printf("Calibration Started\n");
-					shouldStart = true;
 				}
                 break;
             case 'r': //Revert Calibration
                 if(calibrate.bCalibrating)calibrate.revertCalibrationStep();
+                break;
+            case 'a': //Left
+                bA = true;
+                break;
+            case 'd': //Right
+                bD = true;
+                break;
+            case 'w': //Right
+                bW = true;
+                break;
+            case 's': //Right
+                bS = true;
+                break;
+            case OF_KEY_RIGHT: //Move bounding box right
+                if(bD){
+                    calibrate.screenBB.lowerRightCorner.X += .001;
+                    if(calibrate.screenBB.lowerRightCorner.X > 1) calibrate.screenBB.lowerRightCorner.X = 1;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else if(bA){
+                    calibrate.screenBB.upperLeftCorner.X += .001;
+                    if(calibrate.screenBB.upperLeftCorner.X > 1) calibrate.screenBB.upperLeftCorner.X = 1;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else{
+                    calibrate.screenBB.lowerRightCorner.X += .001;
+                    if(calibrate.screenBB.lowerRightCorner.X > 1) calibrate.screenBB.lowerRightCorner.X = 1;
+                    calibrate.screenBB.upperLeftCorner.X += .001;
+                    if(calibrate.screenBB.upperLeftCorner.X > 1) calibrate.screenBB.upperLeftCorner.X = 1;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }
+                break;
+            case OF_KEY_LEFT: //Move bounding box left
+                if(bD){
+                    calibrate.screenBB.lowerRightCorner.X -= .001;
+                    if(calibrate.screenBB.lowerRightCorner.X < 0) calibrate.screenBB.lowerRightCorner.X = 0;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else if(bA){
+                    calibrate.screenBB.upperLeftCorner.X -= .001;
+                    if(calibrate.screenBB.upperLeftCorner.X < 0) calibrate.screenBB.upperLeftCorner.X = 0;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else{
+                    calibrate.screenBB.lowerRightCorner.X -= .001;
+                    if(calibrate.screenBB.lowerRightCorner.X < 0) calibrate.screenBB.lowerRightCorner.X = 0;
+                    calibrate.screenBB.upperLeftCorner.X -= .001;
+                    if(calibrate.screenBB.upperLeftCorner.X < 0) calibrate.screenBB.upperLeftCorner.X = 0;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }
+                break;
+            case OF_KEY_DOWN: //Move bounding box down
+                if(bS){
+                    calibrate.screenBB.lowerRightCorner.Y += .001;
+                    if(calibrate.screenBB.lowerRightCorner.Y > 1) calibrate.screenBB.lowerRightCorner.Y = 1;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else if(bW){
+                    calibrate.screenBB.upperLeftCorner.Y += .001;
+                    if(calibrate.screenBB.upperLeftCorner.Y > 1) calibrate.screenBB.upperLeftCorner.Y = 1;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else{
+                    calibrate.screenBB.lowerRightCorner.Y += .001;
+                    if(calibrate.screenBB.lowerRightCorner.Y > 1) calibrate.screenBB.lowerRightCorner.Y = 1;
+                    calibrate.screenBB.upperLeftCorner.Y += .001;
+                    if(calibrate.screenBB.upperLeftCorner.Y > 1) calibrate.screenBB.upperLeftCorner.Y = 1;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }
+                break;
+            case OF_KEY_UP: //Move bounding box up
+                if(bS){
+                    calibrate.screenBB.lowerRightCorner.Y -= .001;
+                    if(calibrate.screenBB.lowerRightCorner.Y < 0) calibrate.screenBB.lowerRightCorner.Y = 0;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else if(bW){
+                    calibrate.screenBB.upperLeftCorner.Y -= .001;
+                    if(calibrate.screenBB.upperLeftCorner.Y < 0) calibrate.screenBB.upperLeftCorner.Y = 0;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }else{
+                    calibrate.screenBB.lowerRightCorner.Y -= .001;
+                    if(calibrate.screenBB.lowerRightCorner.Y < 0) calibrate.screenBB.lowerRightCorner.Y = 0;
+                    calibrate.screenBB.upperLeftCorner.Y -= .001;
+                    if(calibrate.screenBB.upperLeftCorner.Y < 0) calibrate.screenBB.upperLeftCorner.Y = 0;
+                    calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                    calibrate.calibrationStep = 0;
+                }
+                break;
+                //Start Grid Point Changing
+            case '=':
+                calibrate.GRID_X ++;
+                if(calibrate.GRID_X > 16) calibrate.GRID_X = 16; calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                calibrate.calibrationStep = 0;
+                break;
+            case '-':
+                calibrate.GRID_X --;
+                if(calibrate.GRID_X < 1) calibrate.GRID_X = 1; calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                calibrate.calibrationStep = 0;
+                break;
+            case '+':
+                calibrate.GRID_Y ++;
+                if(calibrate.GRID_Y > 16) calibrate.GRID_Y = 16; calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                calibrate.calibrationStep = 0;
+                break;
+            case '_':
+                calibrate.GRID_Y --;
+                if(calibrate.GRID_Y < 1) calibrate.GRID_Y = 1; calibrate.setGrid(calibrate.GRID_X, calibrate.GRID_Y);
+                calibrate.calibrationStep = 0;
                 break;
         }
     }
@@ -327,6 +410,23 @@ void Calibration::_keyReleased(ofKeyEventArgs &e){
 				bD = false;
 				break;
             case 'x': //Begin Calibrating
+                tracker->passInCalibration(&calibrate);
+                break;
+			case OF_KEY_RIGHT: //Move bounding box right
+                calibrate.computeCameraToScreenMap();
+                tracker->passInCalibration(&calibrate);
+                break;
+            case OF_KEY_LEFT: //Move bounding box left
+                calibrate.computeCameraToScreenMap();
+                tracker->passInCalibration(&calibrate);
+                break;
+            case OF_KEY_DOWN: //Move bounding box down
+                calibrate.computeCameraToScreenMap();
+                tracker->passInCalibration(&calibrate);
+                break;
+            case OF_KEY_UP: //Move bounding box up
+                calibrate.computeCameraToScreenMap();
+                tracker->passInCalibration(&calibrate);
                 break;
 		}
 	}

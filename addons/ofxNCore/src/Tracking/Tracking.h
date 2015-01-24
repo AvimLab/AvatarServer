@@ -14,9 +14,7 @@
 #include <list>
 #include <map>
 
-#include "ofxFiducial.h"
 #include "ContourFinder.h"
-#include "ofxFiducialTracker.h"
 #include "../Events/TouchMessenger.h"
 #include "../Calibration/CalibrationUtils.h"
 
@@ -27,10 +25,7 @@ public:
 	~BlobTracker();
 	//assigns IDs to each blob in the contourFinder
 	void track(ContourFinder* newBlobs);
-	void passInFiducialInfo(ofxFiducialTracker*	_fidfinder);
-	void doFiducialCalculation();
-	void setCameraSize(int width,int height);
-	ofxFiducialTracker*	fidfinder;
+	void passInCalibration(CalibrationUtils* calibrate);
 
 	CalibrationUtils* calibrate;
 	bool isCalibrating;
@@ -39,14 +34,11 @@ public:
 	std::map<int, Blob> getTrackedObjects();
 
 private:
-	int camWidth,camHeight;
 	int trackKnn(ContourFinder *newBlobs, Blob *track, int k, double thresh);
 	int						IDCounter;	  //counter of last blob
 	int						fightMongrel;
 	std::vector<Blob>		trackedBlobs; //tracked blobs
 	std::map<int, Blob>     calibratedBlobs;
-
-	std::map<int,Blob>		trackedObjects;
 	std::map<int, Blob>		calibratedObjects;
 };
 

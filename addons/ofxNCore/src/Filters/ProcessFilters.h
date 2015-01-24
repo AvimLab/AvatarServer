@@ -16,27 +16,29 @@ class ProcessFilters : public Filters {
 
   public:
 
-    void allocate( int w, int h ) 
-	{
+    void allocate( int w, int h ) {
+
         camWidth = w;
         camHeight = h;
 		//initialize learnrate
 		fLearnRate = 0.0f;
         bMiniMode = false;
+
 		exposureStartTime = ofGetElapsedTimeMillis();
+
         //CPU Setup
         grayImg.allocate(camWidth, camHeight);		//Gray Image
         grayBg.allocate(camWidth, camHeight);		//Background Image
         subtractBg.allocate(camWidth, camHeight);   //Background After subtraction
         grayDiff.allocate(camWidth, camHeight);		//Difference Image between Background and Source
         highpassImg.allocate(camWidth, camHeight);  //Highpass Image
-        amplifyImg.allocate(camWidth, camHeight);		//Amplied Image
+        ampImg.allocate(camWidth, camHeight);		//Amplied Image
         floatBgImg.allocate(camWidth, camHeight);	//ofxShortImage used for simple dynamic background subtraction
+
         //GPU Setup
 		gpuReadBackBuffer = new unsigned char[camWidth*camHeight*3];
         gpuReadBackImageGS.allocate(camWidth, camHeight);
         allocateGPU();
-		//^^ Commented out for now, till full GPU implementation
     }
 
     void allocateGPU(){
@@ -46,26 +48,27 @@ class ProcessFilters : public Filters {
 
 		delete gpuReadBackBuffer;
 
-        gpuReadBackBuffer = new unsigned char[camWidth*camHeight];
+        gpuReadBackBuffer = new unsigned char[camWidth*camHeight*3];
         gpuReadBackImageGS.allocate(camWidth, camHeight);
 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, gpuSourceTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,  camWidth, camHeight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,  camWidth, camHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         glBindTexture(GL_TEXTURE_2D, gpuBGTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,  camWidth, camHeight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,  camWidth, camHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         glBindTexture(GL_TEXTURE_2D, 0);
         glDisable(GL_TEXTURE_2D);
-        subtractFilter = new GPUImageFilter("xml/filters/absSubtract.xml", camWidth, camHeight);
-        subtractFilter2 = new GPUImageFilter("xml/filters/subtract.xml", camWidth, camHeight);
-        contrastFilter = new GPUImageFilter("xml/filters/contrast.xml", camWidth, camHeight);
-        gaussVFilter = new GPUImageFilter("xml/filters/gaussV.xml", camWidth, camHeight);
-        gaussHFilter = new GPUImageFilter("xml/filters/gauss.xml", camWidth, camHeight);
-        gaussVFilter2 = new GPUImageFilter("xml/filters/gaussV2.xml", camWidth, camHeight);
-        gaussHFilter2 = new GPUImageFilter("xml/filters/gauss2.xml", camWidth, camHeight);
-        threshFilter = new GPUImageFilter("xml/filters/threshold.xml", camWidth, camHeight);
-        copyFilter = new GPUImageFilter("xml/filters/copy.xml", camWidth, camHeight);
-        grayScale = new GPUImageFilter("xml/filters/grayScale.xml", camWidth, camHeight);
+
+        subtractFilter = new GPUImageFilter("filters/absSubtract.xml", camWidth, camHeight);
+        subtractFilter2 = new GPUImageFilter("filters/subtract.xml", camWidth, camHeight);
+        contrastFilter = new GPUImageFilter("filters/contrast.xml", camWidth, camHeight);
+        gaussVFilter = new GPUImageFilter("filters/gaussV.xml", camWidth, camHeight);
+        gaussHFilter = new GPUImageFilter("filters/gauss.xml", camWidth, camHeight);
+        gaussVFilter2 = new GPUImageFilter("filters/gaussV2.xml", camWidth, camHeight);
+        gaussHFilter2 = new GPUImageFilter("filters/gauss2.xml", camWidth, camHeight);
+        threshFilter = new GPUImageFilter("filters/threshold.xml", camWidth, camHeight);
+        copyFilter = new GPUImageFilter("filters/copy.xml", camWidth, camHeight);
+        grayScale = new GPUImageFilter("filters/grayScale.xml", camWidth, camHeight);
     }
 
 /****************************************************************
@@ -77,6 +80,7 @@ class ProcessFilters : public Filters {
         if(bVerticalMirror || bHorizontalMirror) img.mirror(bVerticalMirror, bHorizontalMirror);
 
         if(!bMiniMode) grayImg = img; //for drawing
+
         //Dynamic background with learn rate
         if(bDynamicBG){
             floatBgImg.addWeighted( img, fLearnRate);
@@ -122,17 +126,14 @@ class ProcessFilters : public Filters {
         if(bAmplify){//Amplify
             img.amplify(img, highpassAmp);
             if(!bMiniMode)
-            amplifyImg = img; //for drawing
+            ampImg = img; //for drawing
         }
 
-		if (bDynamicTH)
-			img.adaptiveThreshold(threshold, -threshSize);
-		else
-			img.threshold(threshold); //Threshold
+        img.threshold(threshold); //Threshold
+		//img.adaptiveThreshold(threshold, -3);
 
         if(!bMiniMode)
         grayDiff = img; //for drawing
-	
     }
 
 /****************************************************************
@@ -172,8 +173,7 @@ class ProcessFilters : public Filters {
                 processedTex = subtractFilter2->apply(subtractFilter->output_texture, processedTex);
         }
 
-        if(bAmplify)
-		{}//amplify
+        if(bAmplify){}//amplify
 
         threshFilter->parameters["Threshold"]->value = (float)threshold / 255.0; //threshold
         processedTex = threshFilter->apply(processedTex);
@@ -193,30 +193,26 @@ class ProcessFilters : public Filters {
  *	Draw Filter Images
  ****************************************************************/
     void draw()
-    {
-		// SEE ofxNCoreVision: MAIN_TOP_OFFSET
-		if (drawAllData)
-		{
-			grayImg.draw(250, 25, 326, 246);
-			grayDiff.draw(250+335, 25, 326, 246);
-		}
-		//
-        floatBgImg.draw(250+137*0, 365, 129, 96);
-        subtractBg.draw(250+137*1, 365, 129, 96);
-        highpassImg.draw(250+137*2, 365, 129, 96);
-		amplifyImg.draw(250+137*3, 365, 129, 96);
+    {		
+		grayDiff.draw(40, 30, 320, 240);
+        //grayImg.draw(40, 30, 320, 240);
+        //grayDiff.draw(385, 30, 320, 240);
+        //floatBgImg.draw(85, 392, 128, 96);
+        subtractBg.draw(556, 224, 150, 96);
+        //highpassImg.draw(385, 392, 128, 96);
+       // ampImg.draw(535, 392, 128, 96);
     }
 
-    void drawGPU()
+    void drawGPU()// related to gpu shaders
     {
-	
-        drawGLTexture(500, 700, 320, 240, gpuSourceTex);
-        drawGLTexture(500, 800, 128, 96, gpuBGTex);
-        gaussVFilter->drawOutputTexture(500, 900, 128, 96);
-        subtractFilter2->drawOutputTexture(500, 1000, 128, 96);
-        threshFilter->drawOutputTexture(500, 1100, 128, 96); //this should be amplify filter but we don't have one yet
-        gpuReadBackImageGS.draw(500, 1200, 320, 240);
-			/**/
+				grayImg.draw(40, 30, 320, 240);
+
+        //drawGLTexture(40, 30, 320, 240, gpuSourceTex);
+        //drawGLTexture(85, 392, 128, 96, gpuBGTex);
+        ///gaussVFilter->drawOutputTexture(235, 392, 128, 96);
+        //ubtractFilter2->drawOutputTexture(385, 392, 128, 96);
+        //threshFilter->drawOutputTexture(535, 392, 128, 96); //this should be amplify filter but we don't have one yet
+        //gpuReadBackImageGS.draw(385, 30, 320, 240);
     }
 };
 #endif

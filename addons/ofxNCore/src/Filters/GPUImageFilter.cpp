@@ -21,11 +21,9 @@ void getFrameBufferForTexture(GLuint* fbo, GLuint* tex, int sizeX, int sizeY){
     //allocate ouput buffer on GPU using FBO
     glEnable(GL_TEXTURE_2D);
     glGenTextures(1, tex);
-	
     glBindTexture(GL_TEXTURE_2D, *tex);
-	
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8,  sizeX, sizeY, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,  sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -45,7 +43,6 @@ void getFrameBufferForTexture(GLuint* fbo, GLuint* tex, int sizeX, int sizeY){
 
     status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
     printf("Frame buffer status: %d\n", status);
-	
 }
 
 
@@ -55,6 +52,7 @@ GPUImageFilter::GPUImageFilter(const char* fname, int sx, int sy){
 
 	res_x = sx; res_y = sy;
 	useGeometryShader =false;
+	//this->shader = shaderProg;
 	glGenTextures(1, &output_texture );
 	getFrameBufferForTexture(&output_buffer, &output_texture, res_x, res_y);
 	this->parseXML(fname);

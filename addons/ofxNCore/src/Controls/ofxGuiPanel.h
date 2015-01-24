@@ -28,11 +28,6 @@
 #include "ofxGuiRadar.h"
 #include "ofxGuiSwitch.h"
 
-//! Added by Yishi Guo for MultiCams
-#include "ofxGuiLabel.h"
-#include "ofxGuiGrid.h"
-#include "ofxGuiArrow.h"
-
 //	----------------------------------------------------------------------------------------------------
 
 class ofxGuiPanel : public ofxGuiObject
@@ -41,7 +36,7 @@ class ofxGuiPanel : public ofxGuiObject
 public:
 
 	ofxGuiPanel();
-	
+
 	void			init(int id, string name, int x, int y, int border, int spacing);
 
 	bool			update(int parameterId, int task, void* data, int length);
@@ -62,21 +57,14 @@ public:
 	ofxGuiObject*	addKnob(int id, string name, int width, int height, float min, float max, float value, int display, int steps);
 	ofxGuiObject*	addRadar(int id, string name, int width, int height, float min, float max, float value, int display, int steps);
 	ofxGuiObject*	addSwitch(int id, string name, int width, int height,  int min, int max, int value, const string* paramStrings);
-
-	//! Added by Yishi Guo
-	ofxGuiObject*	addLabel( int id, string name, int width, int height, string text, ofRGBA fontColor, string fontName = "fonts/verdana.ttf", int fontSize = 10 );
-	ofxGuiObject*	addLabel( int id, string name, int width, int height, string text, ofTrueTypeFont* font, ofRGBA color );
-	ofxGuiObject*	addGrid( int id, string name, int width, int height, int xGrid, int yGrid, int border, int spacing, int mode );
-	ofxGuiObject*	addArrow( int id, string name, int width, int height, int direction, int offset = 0 );
-	ofxGuiObject*	addImage( int id, string name, int width, int height );
-
+	
 	void			adjustToNewContent(int w, int h);
 
 	void			buildFromXml();
 	void			saveToXml();
 
 	int				mBorder, mSpacing;
-	bool			isTransparent;
+	
 	vector			<ofxGuiObject*> mObjects;
 };
 

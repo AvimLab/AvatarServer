@@ -4,7 +4,6 @@
 #include "ofConstants.h"
 #include "ofxThread.h"
 #include "ofxTCPManager.h"
-#include <map>
 
 #define TCP_MAX_CLIENTS  32
 
@@ -70,13 +69,13 @@ class ofxTCPServer : public ofxThread{
 		void threadedFunction();
 
 
-		ofxTCPManager			TCPServer;
-		map<int,ofxTCPClient>	TCPConnections;
+		ofxTCPManager	TCPServer;
+		ofxTCPClient *	TCPConnections;
 
 	protected:
 		bool			connected, verbose;
 		string			str;
-		int				idCount, port;
+		int				count, port;
 		bool			bClientBlocking;
 
 };

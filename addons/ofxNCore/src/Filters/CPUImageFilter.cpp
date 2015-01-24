@@ -16,6 +16,7 @@
 void CPUImageFilter::amplify ( CPUImageFilter& mom, float level ) {
 
 	float scalef = level / 128.0f;
+
 	cvMul( mom.getCvImage(), mom.getCvImage(), cvImageTemp, scalef );
 	swapTemp();
 	flagImageChanged();

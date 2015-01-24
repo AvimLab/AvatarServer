@@ -63,9 +63,6 @@ public:
 	int				mKnobSize;
 	
 	ofRGBA			mCoverColor, mTextColor, mBorderColor, mFrameColor, mSliderColor, mAxisColor, mHandleColor, mButtonColor, mCurveColor, mScopeColor, mMatrixColor;
-	
-	//! Added by Yishi Guo
-	ofRGBA			mLabelColor, mHighlightTextColor, mHighlightShadowColor;
 
 private:
 	

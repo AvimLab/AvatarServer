@@ -49,7 +49,6 @@
 #include "Filters/GPUImageFilter.h"
 #include "Filters/CPUImageFilter.h"
 #include "Filters/ProcessFilters.h"
-#include "Filters/ProcessFiducialFilters.h"
 
 //Used for warped image calibration
 //#include "Calibration/boxAlign.h"

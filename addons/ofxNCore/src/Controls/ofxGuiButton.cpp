@@ -16,8 +16,6 @@
 ofxGuiButton::ofxGuiButton()
 {
 	mParamType = kofxGui_Object_Button;
-
-	bHighlightMode = false;
 }
 
 //	----------------------------------------------------------------------------------------------------
@@ -50,12 +48,6 @@ void ofxGuiButton::setValue(bool value)
 
 //	----------------------------------------------------------------------------------------------------
 
-void ofxGuiButton::setHighlightMode( bool highlight ) {
-	bHighlightMode = highlight;
-}
-
-//	----------------------------------------------------------------------------------------------------
-
 bool ofxGuiButton::update(int id, int task, void* data, int length)
 {
 	bool handled = false;
@@ -76,18 +68,12 @@ void ofxGuiButton::draw()
 	glPushMatrix();
 	
 		glTranslatef(mObjX, mObjY, 0.0f);
-
-		if(mParamName != "") {
-			if ( bHighlightMode ) {
-				drawHighlightParamString( mCtrWidth + mGlobals->mButtonXText,mGlobals->mButtonYText, mParamName, false ); 
-			} else {
-				drawParamString(mCtrWidth + mGlobals->mButtonXText, mGlobals->mButtonYText, mParamName, false);
-
-			}
-		}
-
+		
+		if(mParamName != "")
+			drawParamString(mCtrWidth + mGlobals->mButtonXText, mGlobals->mButtonYText, mParamName, false);
+		
 		ofFill();
-
+		
 		//	background
 		glColor4f(mGlobals->mCoverColor.r, mGlobals->mCoverColor.g, mGlobals->mCoverColor.b, mGlobals->mCoverColor.a);
 		ofRect(mCtrX, mCtrY, mCtrWidth, mCtrHeight);

@@ -38,7 +38,6 @@ public:
 	
 	void			drawHeadString(float x, float y, string text, bool center);
 	void			drawParamString(float x, float y, string text, bool center);
-	void			drawHighlightParamString( float x, float y, string text, bool center );
 	
 	string			floatToString(float value, int display);
 	string			pointToString(ofxPoint2f value, int display);

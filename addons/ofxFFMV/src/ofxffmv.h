@@ -1,38 +1,36 @@
-/* ofxffmv.h
-*  
-*  Created on 12/03/11.
-*  Copyright 2011 NUI Group. All rights reserved.
-*  Author: Anatoly Churikov
-*
-*/
 #ifndef OFXFFMV_H_INCLUDED
 #define OFXFFMV_H_INCLUDED
 
-#include "ofxCameraBase.h"
 #include "pgrflycapture.h"
-#include "pgrcameragui.h"
-#include "ofxXMLSettings.h"
- 
-class ofxffmv : ofxCameraBase
+#include "stdio.h"
+//
+// The maximum number of cameras on the bus.
+//
+#define _MAX_CAMS       10
+class ofxffmv
 {
-public:
-    ofxffmv();
-	~ofxffmv();
-	void setCameraFeature(CAMERA_BASE_FEATURE featureCode,int firstValue,int secondValue,bool isAuto,bool isEnabled);
-	void getCameraFeature(CAMERA_BASE_FEATURE featureCode,int* firstValue,int* secondValue, bool* isAuto, bool* isEnabled,int* minValue,int* maxValue);
-	int getCameraBaseCount();
-	GUID* getBaseCameraGuids(int* camCount);
-	CAMERA_BASE_FEATURE* getSupportedFeatures(int* featuresCount);
-	void callSettingsDialog();
-protected:
-	void getNewFrame(unsigned char* newFrame);
-	void cameraInitializationLogic();
-	void cameraDeinitializationLogic();
-	void setCameraType();
-private:
-    FlyCaptureImage fcImage;
-	FlyCaptureContext cameraContext;
-    FlyCaptureInfoEx  arInfo;
-	CameraGUIContext guiContext;
+    public:
+        ofxffmv();
+		~ofxffmv();
+        void initFFMV(int wid,int hei,int startX=0,int startY=0);
+        void setDeviceID(int id);
+        int getDeviceID();
+        void grabFrame();
+        int getCamWidth();
+        int getCamHeight();
+        void listDevices();
+        static int getDeviceCount();
+        FlyCaptureImage fcImage[_MAX_CAMS];
+
+
+    private:
+        // This acts as a handle to the camera.
+		FlyCaptureContext context[_MAX_CAMS];
+		int fcCameraID;
+        int camWidth;
+        int camHeight;
+        // Enumerate the cameras on the bus.
+        FlyCaptureInfoEx  arInfo[ _MAX_CAMS ];
+        unsigned int	  camNum ;
 };
 #endif // OFXFFMV_H_INCLUDED

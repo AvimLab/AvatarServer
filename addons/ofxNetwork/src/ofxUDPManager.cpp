@@ -1,7 +1,6 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include "ofxUDPManager.h"
-#include "ofxNetworkUtils.h"
 
 //--------------------------------------------------------------------------------
 bool ofxUDPManager::m_bWinsockInit= false;
@@ -43,7 +42,6 @@ bool ofxUDPManager::Close()
 		if(close(m_hSocket) == SOCKET_ERROR)
 	#endif
 	{
-		ofxNetworkCheckError();
 		return(false);
 	}
 	m_hSocket= INVALID_SOCKET;
@@ -62,9 +60,7 @@ bool ofxUDPManager::Create()
 		int unused = true;
 		setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&unused, sizeof(unused));
 	}
-	bool ret = m_hSocket !=	INVALID_SOCKET;
-	if(!ret) ofxNetworkCheckError();
-	return ret;
+	return(m_hSocket !=	INVALID_SOCKET);
 }
 
 //--------------------------------------------------------------------------------
@@ -81,9 +77,7 @@ bool ofxUDPManager::SetNonBlocking(bool useNonBlocking)
 		int retVal = ioctl(m_hSocket,FIONBIO,&arg);
 	#endif
 
-	bool ret=(retVal >= 0);
-	if(!ret) ofxNetworkCheckError();
-	return ret;
+	return (retVal >= 0);
 }
 
 //--------------------------------------------------------------------------------
@@ -94,8 +88,14 @@ bool ofxUDPManager::Bind(unsigned short usPort)
 	//Port MUST	be in Network Byte Order
 	saServer.sin_port =	htons(usPort);
 
-	int	ret	= ::bind(m_hSocket,(struct sockaddr*)&saServer,sizeof(struct sockaddr));
-	if(ret==-1)  ofxNetworkCheckError();
+	int	ret	= bind(m_hSocket,(struct sockaddr*)&saServer,sizeof(struct sockaddr));
+
+	//not using this var anyway but maybe should leave it in for debug
+	#ifdef TARGET_WIN32
+		int	err	= WSAGetLastError();
+	#else
+		int err = errno;
+	#endif
 
 	return (ret	== 0);
 }
@@ -117,7 +117,7 @@ bool ofxUDPManager::BindMcast(char *pMcast, unsigned short usPort)
 
 	if (setsockopt(m_hSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char FAR*) &mreq, sizeof (mreq)) == SOCKET_ERROR)
 	{
-		ofxNetworkCheckError();
+		//printf("setsockopt failed! Error: %d", WSAGetLastError());
 		return false;
 	}
 	printf("here ? \n");
@@ -204,9 +204,7 @@ int	ofxUDPManager::Send(const char* pBuff,	const int iSize)
 		}
 	}*/
 
-	int ret = sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr));
-	if(ret==-1) ofxNetworkCheckError();
-	return ret;
+	return (sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr)));
 	//	return(send(m_hSocket, pBuff, iSize, 0));
 }
 
@@ -226,7 +224,6 @@ int	ofxUDPManager::SendAll(const char*	pBuff, const int iSize)
 		timeval	tv=	{m_dwTimeoutSend, 0};
 		if(select(m_hSocket+1,NULL,&fd,NULL,&tv)== 0)
 		{
-			ofxNetworkCheckError();
 			return(SOCKET_TIMEOUT);
 		}
 	}
@@ -241,7 +238,6 @@ int	ofxUDPManager::SendAll(const char*	pBuff, const int iSize)
 		n =	sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr));
 		if (n == -1)
 			{
-				ofxNetworkCheckError();
 				break;
 			}
 		total += n;
@@ -295,7 +291,6 @@ int	ofxUDPManager::Receive(char* pBuff, const int iSize)
 	}
 	else
 	{
-		ofxNetworkCheckError();
 				//printf("\nreceived from: ????\n");
 		canGetRemoteAddress= false;
 	}
@@ -344,8 +339,8 @@ int	ofxUDPManager::GetMaxMsgSize()
 		int size = sizeof(int);
 	#endif
 
-	int ret = getsockopt(m_hSocket, SOL_SOCKET, SO_MAX_MSG_SIZE, (char*)&sizeBuffer, &size);
-	if(ret==-1) ofxNetworkCheckError();
+	getsockopt(m_hSocket, SOL_SOCKET, SO_MAX_MSG_SIZE, (char*)&sizeBuffer, &size);
+
 	return sizeBuffer;
 }
 
@@ -362,8 +357,8 @@ int	ofxUDPManager::GetReceiveBufferSize()
 		int size = sizeof(int);
 	#endif
 
-	int ret = getsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeBuffer, &size);
-	if(ret==-1) ofxNetworkCheckError();
+	getsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeBuffer, &size);
+
 	return sizeBuffer;
 }
 
@@ -372,12 +367,10 @@ bool ofxUDPManager::SetReceiveBufferSize(int sizeInByte)
 {
 	if (m_hSocket == INVALID_SOCKET) return(false);
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0){
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0)
 		return true;
-	}else{
-		ofxNetworkCheckError();
+	else
 		return false;
-	}
 }
 
 //--------------------------------------------------------------------------------
@@ -393,8 +386,7 @@ int	ofxUDPManager::GetSendBufferSize()
 		int size = sizeof(int);
 	#endif
 
-	int ret = getsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeBuffer, &size);
-	if(ret==-1) ofxNetworkCheckError();
+	getsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeBuffer, &size);
 
 	return sizeBuffer;
 }
@@ -404,12 +396,10 @@ bool ofxUDPManager::SetSendBufferSize(int sizeInByte)
 {
 	if (m_hSocket == INVALID_SOCKET) return(false);
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0){
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0)
 		return true;
-	}else{
-		ofxNetworkCheckError();
+	else
 		return false;
-	}
 }
 
 //--------------------------------------------------------------------------------
@@ -421,12 +411,10 @@ bool ofxUDPManager::SetReuseAddress(bool allowReuse)
 	if (allowReuse)	on=1;
 	else			on=0;
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) ==	0){
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) ==	0)
 		return true;
-	}else{
-		ofxNetworkCheckError();
+	else
 		return false;
-	}
 }
 
 //--------------------------------------------------------------------------------
@@ -436,12 +424,10 @@ bool ofxUDPManager::SetEnableBroadcast(bool enableBroadcast)
 	if (enableBroadcast)	on=1;
 	else					on=0;
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_BROADCAST, (char*)&on, sizeof(on)) ==	0){
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_BROADCAST, (char*)&on, sizeof(on)) ==	0)
 		return true;
-	}else{
-		ofxNetworkCheckError();
+	else
 		return false;
-	}
 }
 
 //--------------------------------------------------------------------------------
@@ -462,7 +448,6 @@ int ofxUDPManager::GetTTL()
 #ifdef _DEBUG
 		printf("getsockopt failed! Error: %d", WSAGetLastError());
 #endif
-		ofxNetworkCheckError();
 		return -1;
 	}
 
@@ -480,7 +465,6 @@ bool ofxUDPManager::SetTTL(int nTTL)
 #ifdef _DEBUG
 		printf("setsockopt failed! Error: %d", WSAGetLastError());
 #endif
-		ofxNetworkCheckError();
 		return false;
 	}
 
